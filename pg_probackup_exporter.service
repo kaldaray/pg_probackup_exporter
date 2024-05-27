@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus PostgresProbackup Exporter
+
+[Service]
+User=postgres
+Group=postgres
+
+ExecReload=/bin/kill -HUP
+
+ExecStart = /usr/bin/pg_probackup_exporter --data-dir=/opt/backup --pg_probackup_path=/usr/bin/pg_probackup-14
+
+SyslogIdentifier=pg_probackup_exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
