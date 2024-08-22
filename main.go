@@ -72,16 +72,54 @@ func getPgProbackupStatus(backupPath string, pgProBackupVersion string) ([]map[s
 // parseBackupStatus - обработка данных о статусе бэкапов и обновление метрик.
 func parseBackupStatus(data []map[string]interface{}) {
 	for _, instance := range data {
-		instanceName := instance["instance"].(string)
-		backups := instance["backups"].([]interface{})
+		instanceName, ok := instance["instance"].(string)
+		if !ok {
+			log.Println("Warning: 'instance' field is missing or not a string")
+			continue
+		}
+
+		backups, ok := instance["backups"].([]interface{})
+		if !ok {
+			log.Println("Warning: 'backups' field is missing or not an array")
+			continue
+		}
 
 		for _, b := range backups {
-			backup := b.(map[string]interface{})
-			backupID := backup["id"].(string)
-			status := backup["status"].(string)
-			backupMode := backup["backup-mode"].(string)
-			dataBytes := backup["data-bytes"].(float64)
-			walBytes := backup["wal-bytes"].(float64)
+			backup, ok := b.(map[string]interface{})
+			if !ok {
+				log.Println("Warning: backup item is not a valid map")
+				continue
+			}
+
+			backupID, ok := backup["id"].(string)
+			if !ok {
+				log.Println("Warning: 'id' field is missing or not a string")
+				continue
+			}
+
+			status, ok := backup["status"].(string)
+			if !ok {
+				log.Println("Warning: 'status' field is missing or not a string")
+				continue
+			}
+
+			backupMode, ok := backup["backup-mode"].(string)
+			if !ok {
+				log.Println("Warning: 'backup-mode' field is missing or not a string")
+				continue
+			}
+
+			dataBytes, ok := backup["data-bytes"].(float64)
+			if !ok {
+				log.Println("Warning: 'data-bytes' field is missing or not a float64")
+				dataBytes = 0
+			}
+
+			walBytes, ok := backup["wal-bytes"].(float64)
+			if !ok {
+				log.Println("Warning: 'wal-bytes' field is missing or not a float64")
+				walBytes = 0
+			}
 
 			// Установка значения метрики статуса бэкапа в 1 - успешный, 0 - неуспешный.
 			pgProbackupStatus.WithLabelValues(instanceName, backupMode, backupID).Set(float64(0))
